@@ -1,0 +1,23 @@
+[
+  {
+    "domain": "injuries",
+    "sport": "NFL",
+    "entity_id": "BUF",
+    "source": "grok-intel",
+    "confidence": 0.8,
+    "payload": {
+      "team": "BUF",
+      "elo_delta": -40,
+      "notes": ["Starting QB ruled out — example intel from chat"]
+    }
+  },
+  {
+    "domain": "intel",
+    "sport": "NFL",
+    "entity_id": "KC-BUF-narrative",
+    "source": "grok-intel",
+    "payload": {
+      "text": "Example: market overreacting to midweek narrative — fade public side"
+    }
+  }
+]
