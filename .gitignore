@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.db
+.DS_Store
+data/bet_history.db
+data/sports_network.db
