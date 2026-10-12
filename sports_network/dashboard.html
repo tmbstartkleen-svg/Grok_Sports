@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Grok Sports · Dashboard</title>
+<style>
+  :root {
+    --bg:#0b0e11; --panel:#12171e; --border:#1e2a38; --text:#e8eaed;
+    --muted:#8b98a5; --accent:#3d9cf0; --good:#3dd68c; --warn:#f5a524; --bad:#f07178;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px;
+           border-bottom:1px solid var(--border); background:#0e1218; position:sticky; top:0; z-index:10; }
+  header h1 { margin:0; font-size:1.1rem; letter-spacing:-0.02em; }
+  header .sub { color:var(--muted); font-size:0.8rem; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; }
+  button { background:#1a2330; color:var(--text); border:1px solid var(--border); border-radius:8px;
+           padding:8px 12px; cursor:pointer; font-size:0.85rem; }
+  button:hover { border-color:var(--accent); color:#fff; }
+  button.primary { background:#1a3a5c; border-color:#2a5a8c; }
+  main { padding:16px 20px; display:grid; gap:16px;
+         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  .card h2 { margin:0 0 10px; font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+  .metric { font-size:1.5rem; font-weight:600; }
+  .muted { color:var(--muted); font-size:0.8rem; }
+  table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+  th, td { text-align:left; padding:6px 4px; border-bottom:1px solid #1a222c; }
+  th { color:var(--muted); font-weight:500; }
+  .ok { color:var(--good); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  .full { grid-column: 1 / -1; }
+  #status { font-size:0.8rem; color:var(--muted); }
+  .tag { display:inline-block; padding:2px 6px; border-radius:4px; background:#1a2330; font-size:0.75rem; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>◆ Grok Sports</h1>
+    <div class="sub">Network dashboard · no paid odds API key</div>
+  </div>
+  <div class="actions">
+    <button class="primary" onclick="collect()">Network pull</button>
+    <button onclick="scan()">Scan board</button>
+    <button onclick="loadAll()">Refresh</button>
+  </div>
+</header>
+<main>
+  <div class="card"><h2>Health</h2><div id="health" class="metric">—</div><div id="status" class="muted">Loading…</div></div>
+  <div class="card"><h2>Inventory</h2><div id="inventory" class="muted">—</div></div>
+  <div class="card"><h2>CLV / Gate</h2><div id="clv" class="muted">Run desk settlements to populate</div></div>
+  <div class="card full"><h2>Action queue</h2><div id="queue" class="muted">Click Scan board</div></div>
+  <div class="card full"><h2>Prediction markets</h2><div id="pm" class="muted">—</div></div>
+  <div class="card full"><h2>Sports bots / odds sample</h2><div id="odds" class="muted">—</div></div>
+</main>
+<script>
+async function j(url, opts) {
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+function el(id){ return document.getElementById(id); }
+async function loadHealth() {
+  try {
+    const h = await j('/health');
+    el('health').innerHTML = '<span class="ok">online</span>';
+    el('status').textContent = h.network || 'grok-sports-network';
+  } catch(e) {
+    el('health').innerHTML = '<span class="bad">down</span>';
+    el('status').textContent = String(e);
+  }
+}
+async function loadSummary() {
+  try {
+    const s = await j('/summary');
+    const inv = s.inventory || [];
+    if (!inv.length) { el('inventory').textContent = 'Empty — run Network pull'; return; }
+    el('inventory').innerHTML = '<table><tr><th>domain</th><th>sport</th><th>n</th></tr>' +
+      inv.map(r => `<tr><td>${r.domain||''}</td><td>${r.sport||''}</td><td>${r.n||0}</td></tr>`).join('') +
+      '</table>';
+  } catch(e) { el('inventory').textContent = String(e); }
+}
+async function loadPM() {
+  try {
+    const d = await j('/records?domain=prediction&limit=25');
+    const rows = d.records || [];
+    if (!rows.length) { el('pm').textContent = 'No PM rows — network pull'; return; }
+    el('pm').innerHTML = '<table><tr><th>book</th><th>yes</th><th>question</th></tr>' +
+      rows.slice(0,20).map(r => {
+        const p = r.payload || {};
+        const yes = p.yes_price != null ? Number(p.yes_price).toFixed(3) : '—';
+        const q = (p.question || r.entity_id || '').slice(0,70);
+        return `<tr><td class="tag">${p.book||r.sport||''}</td><td>${yes}</td><td>${q}</td></tr>`;
+      }).join('') + '</table>';
+  } catch(e) { el('pm').textContent = String(e); }
+}
+async function loadOdds() {
+  try {
+    const d = await j('/odds');
+    const rows = d.odds || [];
+    if (!rows.length) { el('odds').textContent = 'No odds — network pull'; return; }
+    el('odds').innerHTML = '<table><tr><th>sport</th><th>matchup</th><th>status</th></tr>' +
+      rows.slice(0,25).map(r => {
+        const p = r.payload || {};
+        const m = `${p.away||'?'} @ ${p.home||'?'}`;
+        return `<tr><td>${r.sport||''}</td><td>${m}</td><td class="muted">${p.status||''}</td></tr>`;
+      }).join('') + '</table>';
+  } catch(e) { el('odds').textContent = String(e); }
+}
+async function loadQueue() {
+  try {
+    const d = await j('/board');
+    const actions = d.actions || [];
+    if (!actions.length) {
+      el('queue').innerHTML = '<span class="warn">Empty queue — stand down (or Scan after Network pull)</span>';
+      return;
+    }
+    el('queue').innerHTML = '<table><tr><th>#</th><th>source</th><th>legs</th><th>stake</th><th>p</th><th>odds</th><th>edge</th><th>title</th></tr>' +
+      actions.map(a => `<tr><td>${a.rank}</td><td>${a.source}</td><td>${a.n_legs}</td><td>$${Number(a.stake).toFixed(0)}</td><td>${Number(a.model_p).toFixed(3)}</td><td>${Number(a.decimal_odds).toFixed(2)}</td><td>${Number(a.edge).toFixed(3)}</td><td>${(a.title||'').slice(0,64)}</td></tr>`).join('') + '</table>';
+    if (d.gate) {
+      el('clv').innerHTML = `Kelly gate: <b>${d.gate.allowed ? 'OPEN' : 'CLOSED'}</b> kelly=${d.gate.kelly} edge×${d.gate.edge_mult}<br/><span class="muted">${d.gate.reason||''}</span>`;
+    }
+  } catch(e) { el('queue').textContent = 'Scan board to build queue · ' + e; }
+}
+async function collect() {
+  el('status').textContent = 'Running bot team…';
+  try { await j('/collect', { method:'POST' }); el('status').textContent = 'Collect done'; await loadAll(); }
+  catch(e) { el('status').textContent = String(e); }
+}
+async function scan() {
+  el('status').textContent = 'Scanning…';
+  try { await j('/scan', { method:'POST' }); el('status').textContent = 'Scan done'; await loadQueue(); }
+  catch(e) { el('status').textContent = String(e); }
+}
+async function loadAll() { await loadHealth(); await loadSummary(); await loadPM(); await loadOdds(); await loadQueue(); }
+loadAll();
+setInterval(loadHealth, 30000);
+</script>
+</body>
+</html>
