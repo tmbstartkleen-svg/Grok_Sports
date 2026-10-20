@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Grok Sports · Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg:#0b0e11; --panel:#12171e; --border:#1e2a38; --text:#e8eaed;
@@ -14,7 +15,7 @@
          background:var(--bg); color:var(--text); }
   header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px;
            border-bottom:1px solid var(--border); background:#0e1218; position:sticky; top:0; z-index:10; }
-  header h1 { margin:0; font-size:1.1rem; letter-spacing:-0.02em; }
+  header h1 { margin:0; font-size:1.15rem; letter-spacing:-0.02em; }
   header .sub { color:var(--muted); font-size:0.8rem; }
   .actions { display:flex; gap:8px; flex-wrap:wrap; }
   button { background:#1a2330; color:var(--text); border:1px solid var(--border); border-radius:8px;
@@ -32,15 +33,19 @@
   th { color:var(--muted); font-weight:500; }
   .ok { color:var(--good); } .warn { color:var(--warn); } .bad { color:var(--bad); }
   .full { grid-column: 1 / -1; }
+  .half { grid-column: span 1; }
   #status { font-size:0.8rem; color:var(--muted); }
   .tag { display:inline-block; padding:2px 6px; border-radius:4px; background:#1a2330; font-size:0.75rem; }
+  .chart-wrap { position:relative; height:220px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:700px){ .grid-2 { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>◆ Grok Sports</h1>
-    <div class="sub">Network dashboard · no paid odds API key</div>
+    <div class="sub">Network dashboard · charts · action queue · no paid odds key required</div>
   </div>
   <div class="actions">
     <button class="primary" onclick="collect()">Network pull</button>
@@ -52,17 +57,57 @@
   <div class="card"><h2>Health</h2><div id="health" class="metric">—</div><div id="status" class="muted">Loading…</div></div>
   <div class="card"><h2>Inventory</h2><div id="inventory" class="muted">—</div></div>
   <div class="card"><h2>CLV / Gate</h2><div id="clv" class="muted">Run desk settlements to populate</div></div>
+  <div class="card"><h2>Board snapshot</h2><div id="boardmeta" class="muted">Scan to populate</div></div>
+
+  <div class="card full">
+    <h2>Edge distribution</h2>
+    <div class="grid-2">
+      <div class="chart-wrap"><canvas id="edgeChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="sourceChart"></canvas></div>
+    </div>
+  </div>
+
   <div class="card full"><h2>Action queue</h2><div id="queue" class="muted">Click Scan board</div></div>
   <div class="card full"><h2>Prediction markets</h2><div id="pm" class="muted">—</div></div>
   <div class="card full"><h2>Sports bots / odds sample</h2><div id="odds" class="muted">—</div></div>
 </main>
 <script>
+let edgeChart, sourceChart;
+
 async function j(url, opts) {
   const r = await fetch(url, opts);
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
 function el(id){ return document.getElementById(id); }
+
+function ensureCharts() {
+  if (!edgeChart) {
+    edgeChart = new Chart(el('edgeChart'), {
+      type: 'bar',
+      data: { labels: [], datasets: [{ label: 'Edge', data: [], backgroundColor: '#3d9cf0' }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, title: { display: true, text: 'Top ticket edges', color: '#8b98a5' } },
+        scales: {
+          x: { ticks: { color: '#8b98a5' }, grid: { color: '#1a222c' } },
+          y: { ticks: { color: '#8b98a5' }, grid: { color: '#1a222c' } }
+        }
+      }
+    });
+  }
+  if (!sourceChart) {
+    sourceChart = new Chart(el('sourceChart'), {
+      type: 'doughnut',
+      data: { labels: [], datasets: [{ data: [], backgroundColor: ['#3d9cf0','#3dd68c','#f5a524','#f07178','#8b98a5'] }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#8b98a5' } }, title: { display: true, text: 'Sources', color: '#8b98a5' } }
+      }
+    });
+  }
+}
+
 async function loadHealth() {
   try {
     const h = await j('/health');
@@ -111,18 +156,39 @@ async function loadOdds() {
   } catch(e) { el('odds').textContent = String(e); }
 }
 async function loadQueue() {
+  ensureCharts();
   try {
     const d = await j('/board');
     const actions = d.actions || [];
+    el('boardmeta').innerHTML = d.notes
+      ? `<span class="ok">${d.n_legs||0}</span> legs · <span class="ok">${d.n_combos||0}</span> combos<br/><span class="muted">${d.notes}</span>`
+      : 'Scan to populate';
+
+    if (d.gate) {
+      const open = d.gate.allowed;
+      el('clv').innerHTML = `Kelly gate: <b class="${open?'ok':'warn'}">${open ? 'OPEN' : 'CLOSED'}</b><br/>
+        kelly=${d.gate.kelly} · edge×${d.gate.edge_mult}<br/><span class="muted">${d.gate.reason||''}</span>`;
+    }
+
     if (!actions.length) {
       el('queue').innerHTML = '<span class="warn">Empty queue — stand down (or Scan after Network pull)</span>';
+      edgeChart.data.labels = []; edgeChart.data.datasets[0].data = []; edgeChart.update();
+      sourceChart.data.labels = []; sourceChart.data.datasets[0].data = []; sourceChart.update();
       return;
     }
     el('queue').innerHTML = '<table><tr><th>#</th><th>source</th><th>legs</th><th>stake</th><th>p</th><th>odds</th><th>edge</th><th>title</th></tr>' +
       actions.map(a => `<tr><td>${a.rank}</td><td>${a.source}</td><td>${a.n_legs}</td><td>$${Number(a.stake).toFixed(0)}</td><td>${Number(a.model_p).toFixed(3)}</td><td>${Number(a.decimal_odds).toFixed(2)}</td><td>${Number(a.edge).toFixed(3)}</td><td>${(a.title||'').slice(0,64)}</td></tr>`).join('') + '</table>';
-    if (d.gate) {
-      el('clv').innerHTML = `Kelly gate: <b>${d.gate.allowed ? 'OPEN' : 'CLOSED'}</b> kelly=${d.gate.kelly} edge×${d.gate.edge_mult}<br/><span class="muted">${d.gate.reason||''}</span>`;
-    }
+
+    // Charts
+    edgeChart.data.labels = actions.map(a => '#' + a.rank);
+    edgeChart.data.datasets[0].data = actions.map(a => Number(a.edge) || 0);
+    edgeChart.update();
+
+    const srcCount = {};
+    actions.forEach(a => { const s = a.source || 'other'; srcCount[s] = (srcCount[s]||0)+1; });
+    sourceChart.data.labels = Object.keys(srcCount);
+    sourceChart.data.datasets[0].data = Object.values(srcCount);
+    sourceChart.update();
   } catch(e) { el('queue').textContent = 'Scan board to build queue · ' + e; }
 }
 async function collect() {

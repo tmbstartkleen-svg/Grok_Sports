@@ -20,6 +20,7 @@
 | nfl_injuries_bot | injuries | NFL |
 | nfl_stats_bot | stats | NFL |
 | nba_ratings_bot | ratings | NBA |
+| soccer_ratings_bot | ratings | SOCCER |
 
 Add soccer/MLB bots the same way: one domain per bot, write to NetworkStore.
 
