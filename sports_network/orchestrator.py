@@ -21,17 +21,19 @@ from sports_network.bots.nfl.injuries_bot import NFLInjuriesBot
 from sports_network.bots.nfl.espn_injuries_bot import ESPNInjuriesBot
 from sports_network.bots.nfl.stats_bot import NFLStatsBot
 from sports_network.bots.nba.ratings_bot import NBARatingsBot
+from sports_network.bots.soccer.ratings_bot import SoccerRatingsBot
 
 
 BOT_TEAM = [
-    OddsBot,           # ESPN public scoreboard
-    WeatherBot,        # Open-Meteo free
-    NFLRatingsBot,     # internal Elo
-    ESPNInjuriesBot,   # ESPN public injuries
-    NFLInjuriesBot,    # optional env deltas
-    NFLStatsBot,       # internal stats proxies
-    NBARatingsBot,     # internal NBA Elo
-    IntelBot,          # Grok / manual intel inbox
+    OddsBot,             # ESPN public scoreboard (NFL/NBA/NHL/MLB/NCAAF)
+    WeatherBot,          # Open-Meteo free
+    NFLRatingsBot,       # internal Elo
+    ESPNInjuriesBot,     # ESPN public injuries
+    NFLInjuriesBot,      # optional env deltas
+    NFLStatsBot,         # internal stats proxies
+    NBARatingsBot,       # internal NBA Elo
+    SoccerRatingsBot,    # soccer club Elo seeds
+    IntelBot,            # Grok / manual intel inbox
 ]
 
 
@@ -62,6 +64,7 @@ def main():
     print("=" * 64)
     print("  No Odds API key needed. Optional: data/intel_inbox.json from Grok.")
     print("  API: python3 -m sports_network.api.server")
+    print("  Desk: python3 desk.py")
 
 
 if __name__ == "__main__":

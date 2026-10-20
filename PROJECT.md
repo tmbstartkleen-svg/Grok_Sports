@@ -12,10 +12,27 @@
 - Grok Sports — CLV report and gate status
 - Grok Sports — add soccer bot team
 - Grok Sports — path cash-out on top parlay
+- Grok Sports — upgrade dashboard charts
+- Grok Sports — tighten network → desk integration
 
 ## Stack
 
-- sports_network/ — multi-bot data supply + local API
-- core/ — EV, Kelly, CLV, NFL model, risk, analytics
-- desk.py — CLI desk (prompt: grok-sports>)
-- app.py — Streamlit desk
+- `sports_network/` — multi-bot data supply + local API + dashboard
+- `core/` — EV, Kelly, CLV, NFL model, risk, analytics, path cash-out
+- `desk.py` — CLI desk (`grok-sports>` prompt)
+- `app.py` — Streamlit desk
+- `requirements.txt` + `Makefile` — packaging
+
+## Bot team (current)
+
+| Bot | Domain | Sport |
+|-----|--------|-------|
+| odds_bot | odds | MULTI |
+| weather_bot | weather | NFL |
+| nfl_ratings_bot | ratings | NFL |
+| espn_injuries_bot | injuries | NFL |
+| nfl_injuries_bot | injuries | NFL |
+| nfl_stats_bot | stats | NFL |
+| nba_ratings_bot | ratings | NBA |
+| soccer_ratings_bot | ratings | SOCCER |
+| intel_bot | intel | MULTI |

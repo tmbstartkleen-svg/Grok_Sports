@@ -1,0 +1,9 @@
+# Grok Sports — core runtime
+numpy>=1.24
+pandas>=2.0
+streamlit>=1.28
+requests>=2.31
+
+# Optional but recommended for live PM / richer boards
+# (still works without paid Odds API key)
+python-dateutil>=2.8
