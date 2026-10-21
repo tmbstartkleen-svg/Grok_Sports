@@ -1,0 +1,11 @@
+services:
+  grok-sports:
+    build: .
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NETWORK_PORT=8787
+      # Optional: ODDS_API_KEY=
+    restart: unless-stopped
