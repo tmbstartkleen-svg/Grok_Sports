@@ -17,11 +17,12 @@
 
 ## Stack
 
-- `sports_network/` — multi-bot data supply + local API + dashboard
+- `sports_network/` — multi-bot data supply + bridge + local API + dashboard
+- `sports_network/bridge.py` — NetworkStore → MarketOdds + injury/ratings into model
 - `core/` — EV, Kelly, CLV, NFL model, risk, analytics, path cash-out
 - `desk.py` — CLI desk (`grok-sports>` prompt)
 - `app.py` — Streamlit desk
-- `requirements.txt` + `Makefile` — packaging
+- `requirements.txt` + `Makefile` + `start.sh` + Docker — packaging
 
 ## Bot team (current)
 
@@ -35,4 +36,5 @@
 | nfl_stats_bot | stats | NFL |
 | nba_ratings_bot | ratings | NBA |
 | soccer_ratings_bot | ratings | SOCCER |
+| mlb_ratings_bot | ratings | MLB |
 | intel_bot | intel | MULTI |

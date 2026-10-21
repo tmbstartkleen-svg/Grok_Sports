@@ -62,12 +62,25 @@ Save structured JSON to `data/intel_inbox.json`, then `network pull`.
 
 | Layer | Role |
 |-------|------|
-| Bot team | odds, weather, ratings, injuries, stats, soccer, intel |
+| Bot team | odds, weather, ratings, injuries, stats, soccer, mlb, intel |
 | Sports Network DB | proprietary SQLite store |
+| Bridge | NetworkStore → MarketOdds + injury/ratings into edge model |
 | Local API | your data key for any app (`:8787`) |
 | EV Desk | action queue, CLV gate, Kelly, risk, path cash-out |
-| Streamlit app | full visual desk |
+| Streamlit app | full visual desk + charts |
 | CLI desk | fast terminal workflow |
+
+## One-command start
+
+```bash
+./start.sh            # API + dashboard on :8787
+./start.sh desk       # CLI desk
+./start.sh network    # bot team only
+./start.sh app        # Streamlit
+
+# or Docker
+docker compose up --build
+```
 
 ## Make targets
 
@@ -86,4 +99,5 @@ make clean     # pycache + local DBs
 - **Action queue** — empty queue is a feature (no edge → stand down)
 - **Path cash-out** — Monte Carlo mid-parlay decisions
 - **Risk limits** — daily / portfolio filters on the queue
+- **Network bridge** — bot inventory feeds model prices + injury Elo
 - **Zero paid key** for the core loop
