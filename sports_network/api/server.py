@@ -33,22 +33,22 @@ def _build_board() -> dict:
         BetHistory, build_action_queue, clv_gate,
     )
     from core.risk_limits import filter_actions_by_risk
-    from data.odds_connector import OddsConnector
     from data.prediction_markets import PredictionMarketConnector
+    from sports_network.bridge import fetch_slate_with_network
 
     BANKROLL, KELLY, MAX_PER = 10000.0, 0.25, 0.04
     MIN_EDGE, MIN_P, SEED = 0.015, 0.45, 42
     hist = BetHistory()
     gate = clv_gate(hist, base_kelly=KELLY)
     legs, notes = [], []
-    try:
-        conn = OddsConnector()
-        markets = conn.fetch_slate(sports=["NFL", "NCAAF", "NBA", "NHL"], days_ahead=5, seed=SEED)
-        notes.append(f"sports:{len(markets)}")
-    except Exception:
-        markets = OddsConnector(api_key=None)._synthetic_slate(["NFL", "NCAAF", "NBA", "NHL"], 5, SEED)
-        notes.append("sports:fallback")
-    rows = markets_to_model_rows(markets, prefer_books=None, apply_weather=True, apply_hfa=True)
+    markets, net_notes, injury_deltas = fetch_slate_with_network(
+        sports=["NFL", "NCAAF", "NBA", "NHL"], days_ahead=5, seed=SEED, prefer_network=True
+    )
+    notes.extend(net_notes)
+    rows = markets_to_model_rows(
+        markets, prefer_books=None, apply_weather=True, apply_hfa=True,
+        injury_deltas=injury_deltas or None,
+    )
     for i, r in enumerate(rows):
         p = float(r["model_p"])
         dec = float(r["best_decimal"])
