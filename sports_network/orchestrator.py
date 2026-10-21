@@ -22,6 +22,7 @@ from sports_network.bots.nfl.espn_injuries_bot import ESPNInjuriesBot
 from sports_network.bots.nfl.stats_bot import NFLStatsBot
 from sports_network.bots.nba.ratings_bot import NBARatingsBot
 from sports_network.bots.soccer.ratings_bot import SoccerRatingsBot
+from sports_network.bots.mlb.ratings_bot import MLBRatingsBot
 
 
 BOT_TEAM = [
@@ -32,7 +33,8 @@ BOT_TEAM = [
     NFLInjuriesBot,      # optional env deltas
     NFLStatsBot,         # internal stats proxies
     NBARatingsBot,       # internal NBA Elo
-    SoccerRatingsBot,    # soccer club Elo seeds
+    SoccerRatingsBot,    # soccer Elo (+ results file)
+    MLBRatingsBot,       # MLB Elo seeds
     IntelBot,            # Grok / manual intel inbox
 ]
 

@@ -1,4 +1,4 @@
-.PHONY: network desk app api dashboard install clean
+.PHONY: network desk app api dashboard install clean docker-build docker-run start start-desk
 
 install:
 	pip install -r requirements.txt
@@ -29,3 +29,15 @@ help:
 	@echo "  make app       — Streamlit desk"
 	@echo "  make api       — local API + dashboard on :8787"
 	@echo "  make clean     — remove pycache + local DBs"
+
+docker-build:
+	docker build -t grok-sports .
+
+docker-run:
+	docker compose up --build -d
+
+start:
+	./start.sh api
+
+start-desk:
+	./start.sh desk
